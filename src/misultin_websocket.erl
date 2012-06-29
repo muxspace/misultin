@@ -85,24 +85,35 @@ connect(ServerRef, SessionsRef, #req{headers = Headers} = Req, #ws{vsn = Vsn, so
 % Check if headers correspond to headers requirements.
 -spec check_headers(Headers::http_headers(), RequiredHeaders::http_headers()) -> true | http_headers().
 check_headers(Headers, RequiredHeaders) ->
-	F = fun({Tag, Val}) ->
-		% see if the required Tag is in the Headers
-		case misultin_utility:header_get_value(Tag, Headers) of
-			false -> true; % header not found, keep in list
-			HVal ->
-				case Val of
-					ignore -> false; % ignore value -> ok, remove from list
-					HVal -> false;	 % expected val -> ok, remove from list
-					_ ->
-						% check if header has multiple parameters (for instance FF7 websockets)
-						not(lists:member(Val,string:tokens(HVal,", ")))
-				end		
-		end
-	end,
-	case lists:filter(F, RequiredHeaders) of
-		[] -> true;
-		MissingHeaders -> MissingHeaders
-	end.
+  F = fun({Tag, Val}) ->
+    % see if the required Tag is in the Headers
+    case misultin_utility:header_get_value(Tag, Headers) of
+      false -> true; % header not found, keep in list      
+      HVal ->        
+        case compare_header_values(HVal, Val) of
+          ignore -> false;   % ignore value -> ok, remove from list
+          match -> false;    % expected val -> ok, remove from list
+          _ ->
+            % check if header has multiple parameters (for instance FF7 websockets)
+            not(lists:member(Val,string:tokens(HVal,", ")))
+        end   
+    end
+  end,
+  case lists:filter(F, RequiredHeaders) of
+    [] -> true;
+    MissingHeaders -> MissingHeaders
+  end.
+
+% ensure header value comparisons are case insensitive - inline with WS specifiction  
+% IE submits the 'upgrade' header value as 'Websocket', other browsers submit it as 'websocket'
+compare_header_values(_HVal, ignore)-> 
+  ignore;
+compare_header_values(HVal, Val) ->
+  compare_header_values_lc(string:to_lower(HVal), string:to_lower(Val)).
+compare_header_values_lc(_HVal, _Val) when _HVal == _Val->
+  match;
+compare_header_values_lc(_HVal, _Val)->
+  nomatch.
 
 % Close socket and custom handling loop dependency
 -spec websocket_close(Socket::socket(), WsHandleLoopPid::pid(), SocketMode::socketmode(), WsAutoExit::boolean()) -> ok.
