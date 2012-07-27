@@ -265,10 +265,6 @@ ws_loop(WsHandleLoopPid, SessionsRef, #ws{vsn = Vsn, socket = Socket, socket_mod
 			?LOG_DEBUG("shutdown request received, closing websocket with pid ~p", [self()]),
 			% close websocket and custom controlling loop
 			websocket_close(Socket, WsHandleLoopPid, SocketMode, WsAutoExit);
-    {shutdown, Reason} ->
-      ?LOG_DEBUG("shutdown request received, closing websocket with pid ~p", [self()]),
-      % close websocket and custom controlling loop
-      websocket_close(Socket, WsHandleLoopPid, SocketMode, WsAutoExit);
     _Ignored ->
 			?LOG_WARNING("received unexpected message, ignoring: ~p", [_Ignored]),
 			ws_loop(WsHandleLoopPid, SessionsRef, Ws, State)
