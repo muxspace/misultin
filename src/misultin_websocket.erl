@@ -260,11 +260,12 @@ ws_loop(WsHandleLoopPid, SessionsRef, #ws{vsn = Vsn, socket = Socket, socket_mod
 			?LOG_DEBUG("sending data: ~p to websocket module: ~p", [Data, VsnMod]),
 			misultin_socket:send(Socket, VsnMod:send_format(Data, State), SocketMode),
 			ws_loop(WsHandleLoopPid, SessionsRef, Ws, State);
-		shutdown ->
+		X when X == shutdown;
+           X == normal ->
 			?LOG_DEBUG("shutdown request received, closing websocket with pid ~p", [self()]),
 			% close websocket and custom controlling loop
 			websocket_close(Socket, WsHandleLoopPid, SocketMode, WsAutoExit);
-		_Ignored ->
+    _Ignored ->
 			?LOG_WARNING("received unexpected message, ignoring: ~p", [_Ignored]),
 			ws_loop(WsHandleLoopPid, SessionsRef, Ws, State)
 	end.
